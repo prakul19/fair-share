@@ -22,7 +22,8 @@ public class Debt {
     @JoinColumn(name = "group_id")
     private Group group;
     private Double amount;
-    private Boolean isSettled = false;
+    @Builder.Default
+    private boolean isActive = true;
 }
 
 
