@@ -10,6 +10,9 @@ import com.cg.fairshare.repository.GroupRepository;
 import com.cg.fairshare.repository.ParticipantRepository;
 import com.cg.fairshare.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -52,5 +55,10 @@ public class GroupServiceImpl implements IGroupService{
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new GroupNotFoundException("Group not found with id: " + groupId));
         return participantRepository.findByGroup(group);
+    }
+
+    public ResponseEntity<String> deleteGroupById(Long groupId) {
+        groupRepository.deleteById(groupId);
+        return new ResponseEntity<>("Your group has been deleted", HttpStatus.OK);
     }
 }

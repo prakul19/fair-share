@@ -4,6 +4,7 @@ import com.cg.fairshare.dto.GroupRequest;
 import com.cg.fairshare.dto.ParticipantRequest;
 import com.cg.fairshare.model.Group;
 import com.cg.fairshare.model.Participant;
+import org.springframework.http.ResponseEntity;
 
 import java.util.List;
 
@@ -12,4 +13,5 @@ public interface IGroupService {
     Participant addParticipant(Long groupId, ParticipantRequest dto);
 
     List<Participant> listParticipants(Long groupId);
+    public ResponseEntity<?> deleteGroupById(Long groupId);
 }

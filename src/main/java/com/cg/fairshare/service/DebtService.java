@@ -48,6 +48,9 @@ public class DebtService {
                 }
             }
         }
+
+        System.out.println(debtMap.values());
+
         debtRepository.saveAll(debtMap.values());
     }
 }

@@ -51,4 +51,9 @@ public class GroupController {
         return ResponseEntity.ok(group);
     }
 
+    @DeleteMapping("/deletegroup/{groupId}")
+    public ResponseEntity<String> deleteGroup(@PathVariable Long groupId){
+        return groupService.deleteGroupById(groupId);
+    }
+
 }

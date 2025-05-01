@@ -31,6 +31,7 @@ public class Group {
     @OneToMany(mappedBy = "group", cascade = CascadeType.ALL)
     private List<Participant> participants;
 
+    @JsonBackReference
     @OneToMany(mappedBy = "group", cascade = CascadeType.ALL)
     private List<Expense> expenses;
 }
