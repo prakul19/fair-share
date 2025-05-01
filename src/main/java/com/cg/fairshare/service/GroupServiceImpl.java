@@ -13,9 +13,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class GroupServiceImpl implements IGroupService{
@@ -30,7 +33,14 @@ public class GroupServiceImpl implements IGroupService{
 
     @Override
     public Group createGroup(GroupRequest dto) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String email = auth.getName();
+        Optional<User> user = userRepository.findByEmail(email);
+
         Group group = new Group();
+        if(user.isPresent()) {
+            group.setCreatedBy(user.get());
+        }
         group.setName(dto.getName());
         return groupRepository.save(group);
     }
