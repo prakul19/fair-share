@@ -2,6 +2,7 @@ package com.cg.fairshare.service;
 
 import com.cg.fairshare.dto.GroupRequest;
 import com.cg.fairshare.dto.ParticipantRequest;
+import com.cg.fairshare.exception.GroupNotFoundException;
 import com.cg.fairshare.model.Group;
 import com.cg.fairshare.model.Participant;
 import com.cg.fairshare.model.User;
@@ -10,6 +11,8 @@ import com.cg.fairshare.repository.ParticipantRepository;
 import com.cg.fairshare.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 public class GroupServiceImpl implements IGroupService{
@@ -32,7 +35,7 @@ public class GroupServiceImpl implements IGroupService{
     @Override
     public Participant addParticipant(Long groupId, ParticipantRequest dto) {
         Group group = groupRepository.findById(groupId)
-                .orElseThrow(() -> new RuntimeException("Group not found with ID: " + groupId));
+                .orElseThrow(() -> new GroupNotFoundException("Group not found with ID: " + groupId));
 
         User user = userRepository.findById(dto.getUserId())
                 .orElseThrow(() -> new RuntimeException("User not found with ID: " + dto.getUserId()));
@@ -42,5 +45,12 @@ public class GroupServiceImpl implements IGroupService{
         participant.setGroup(group);
 
         return participantRepository.save(participant);
+    }
+
+    @Override
+    public List<Participant> listParticipants(Long groupId) {
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new GroupNotFoundException("Group not found with id: " + groupId));
+        return participantRepository.findByGroup(group);
     }
 }

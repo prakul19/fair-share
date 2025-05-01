@@ -9,6 +9,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/groups")
 public class GroupController {
@@ -26,5 +28,10 @@ public class GroupController {
             @RequestBody ParticipantRequest dto) {
 
         return ResponseEntity.ok(groupService.addParticipant(groupId, dto));
+    }
+
+    @GetMapping("/{groupId}/participants")
+    public ResponseEntity<List<Participant>> listParticipants(@PathVariable Long groupId) {
+        return ResponseEntity.ok(groupService.listParticipants(groupId));
     }
 }
