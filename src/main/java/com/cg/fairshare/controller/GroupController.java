@@ -1,33 +1,30 @@
 package com.cg.fairshare.controller;
 
 import com.cg.fairshare.dto.GroupRequest;
+import com.cg.fairshare.dto.ParticipantRequest;
 import com.cg.fairshare.model.Group;
-import com.cg.fairshare.service.IGroupService;
-import lombok.RequiredArgsConstructor;
+import com.cg.fairshare.model.Participant;
+import com.cg.fairshare.service.GroupServiceImpl;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @RestController
-@RequestMapping("/api/groups")
-@RequiredArgsConstructor
+@RequestMapping("/groups")
 public class GroupController {
+    @Autowired
+    private GroupServiceImpl groupService;
 
-    private final IGroupService groupService;
-
-    // Create a new group
-    @PostMapping("/create")
-    public ResponseEntity<Group> createGroup(@RequestParam Long creatorId,
-                                             @RequestBody GroupRequest groupRequest) {
-        Group createdGroup = groupService.createGroup(creatorId, groupRequest);
-        return ResponseEntity.ok(createdGroup);
+    @PostMapping
+    public ResponseEntity<Group> createGroup(@RequestBody GroupRequest dto) {
+        return ResponseEntity.ok(groupService.createGroup(dto));
     }
 
-    // Get all groups for a user
-    @GetMapping("/user/{userId}")
-    public ResponseEntity<List<Group>> getGroupsForUser(@PathVariable Long userId) {
-        List<Group> groups = groupService.getGroupsForUser(userId);
-        return ResponseEntity.ok(groups);
+    @PostMapping("/{groupId}/participants")
+    public ResponseEntity<Participant> addParticipant(
+            @PathVariable Long groupId,
+            @RequestBody ParticipantRequest dto) {
+
+        return ResponseEntity.ok(groupService.addParticipant(groupId, dto));
     }
 }
