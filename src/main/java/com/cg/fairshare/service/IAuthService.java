@@ -8,7 +8,6 @@ public interface IAuthService {
     String login(LoginRequest loginRequest);
     User register(RegisterRequest registerRequest);
 
-    // new methods:
     void createAndSendToken(String email);
     void resetPassword(String email, String otp, String newPassword);
     void changePasswordAuthenticated(String email, String oldPassword, String newPassword);
