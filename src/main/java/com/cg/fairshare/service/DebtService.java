@@ -48,7 +48,6 @@ public class DebtService {
                 }
             }
         }
-
         debtRepository.saveAll(debtMap.values());
     }
 }
