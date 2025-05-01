@@ -18,19 +18,19 @@ public class AuthServiceImpl implements IAuthService {
     @Autowired
     private JwtUtil jwtUtil;
 
-    // Inject the interface rather than the concrete implementation
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private PasswordResetService passwordResetService;  // new
+
     @Override
     public String login(LoginRequest loginRequest) {
-        String email = loginRequest.getEmail();
-        String password = loginRequest.getPassword();
-
+        String email = loginRequest.getEmail().trim().toLowerCase();
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Invalid email"));
 
-        if (passwordEncoder.matches(password, user.getPassword())) {
+        if (passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
             return jwtUtil.generateToken(email);
         } else {
             throw new RuntimeException("Invalid credentials");
@@ -42,9 +42,43 @@ public class AuthServiceImpl implements IAuthService {
         String encryptedPassword = passwordEncoder.encode(request.getPassword());
         User user = User.builder()
                 .name(request.getName())
-                .email(request.getEmail())
+                .email(request.getEmail().trim().toLowerCase())
                 .password(encryptedPassword)
                 .build();
         return userRepository.save(user);
+    }
+
+    // ---- New methods below ----
+
+    /**
+     * Public API: generate an OTP, store it, and email it to the user.
+     */
+    @Override
+    public void createAndSendToken(String email) {
+        passwordResetService.createAndSendToken(email.trim().toLowerCase());
+    }
+
+    /**
+     * Public API: verify OTP + email, then reset password and email confirmation.
+     */
+    @Override
+    public void resetPassword(String email, String otp, String newPassword) {
+        passwordResetService.resetPassword(
+                email.trim().toLowerCase(),
+                otp,
+                newPassword
+        );
+    }
+
+    /**
+     * Authenticated API: verify old password + token, then change to new password and email confirmation.
+     */
+    @Override
+    public void changePasswordAuthenticated(String email, String oldPassword, String newPassword) {
+        passwordResetService.changePasswordAuthenticated(
+                email.trim().toLowerCase(),
+                oldPassword,
+                newPassword
+        );
     }
 }
