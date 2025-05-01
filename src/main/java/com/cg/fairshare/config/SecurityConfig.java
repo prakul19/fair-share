@@ -17,7 +17,7 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(); // Define BCryptPasswordEncoder bean
+        return new BCryptPasswordEncoder();
     }
 
     @Bean
@@ -25,13 +25,18 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/register", "/auth/login").permitAll()  // Allow login and registration
-                        .anyRequest().authenticated()  // Require authentication for all other requests
+                        // public endpoints:
+                        .requestMatchers(
+                                "/auth/register",
+                                "/auth/login",
+                                "/auth/forgot-password",
+                                "/auth/reset-password"
+                        ).permitAll()
+                        .anyRequest().authenticated()
                 )
-                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);  // Add JWT filter
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
-        logger.info("Security configuration loaded");
-
+        logger.info("Security configuration loaded with public forgot/reset-password");
         return http.build();
     }
 }
