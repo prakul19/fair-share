@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -23,7 +24,8 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http, JwtFilter jwtFilter) throws Exception {
         http
-                .csrf(csrf -> csrf.disable())
+             //  .csrf(csrf -> csrf.disable())
+                .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         // public endpoints:
                         .requestMatchers(
@@ -31,7 +33,7 @@ public class SecurityConfig {
                                 "/auth/login",
                                 "/auth/forgot-password",
                                 "/auth/reset-password",
-                                "/group/calculatedebt/**"
+                                "/groups/calculatedebt/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

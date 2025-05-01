@@ -24,12 +24,10 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     }
 
     @Override
-    public void createAndSendToken(String email) {
+    public void createAndSendToken(String email){
         User user = userRepo.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("No user found with email: " + email));
-
         tokenRepo.deleteByEmail(email);
-
         String otp = generateOtp();
         PasswordResetToken prt = new PasswordResetToken();
         prt.setEmail(email);
@@ -45,14 +43,12 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     }
 
     @Override
-    public void resetPassword(String email, String otp, String newPassword) {
+    public void resetPassword(String email, String otp, String newPassword){
         PasswordResetToken prt = tokenRepo.findByEmailAndToken(email, otp)
                 .orElseThrow(() -> new RuntimeException("Invalid OTP"));
-
         if (prt.getExpiresAt().isBefore(LocalDateTime.now())) {
             throw new RuntimeException("OTP expired");
         }
-
         User user = userRepo.findByEmail(email).get();
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepo.save(user);
@@ -70,14 +66,12 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     public void changePasswordAuthenticated(String email, String oldPassword, String newPassword) {
         User user = userRepo.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-
         if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
             throw new RuntimeException("Old password is incorrect");
         }
 
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepo.save(user);
-
         emailService.sendSimpleMessage(
                 email,
                 "FairShare Password Changed",
