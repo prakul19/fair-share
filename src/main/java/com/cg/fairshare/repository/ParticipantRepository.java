@@ -11,4 +11,5 @@ import java.util.List;
 public interface ParticipantRepository extends JpaRepository<Participant, Long> {
     Optional<Participant> findByUserAndGroup(User user, Group group);
     List<Participant> findByGroup(Group group);
+    boolean existsByGroupAndUser(Group group, User user);
 }

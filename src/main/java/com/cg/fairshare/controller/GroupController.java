@@ -3,6 +3,7 @@ package com.cg.fairshare.controller;
 import com.cg.fairshare.dto.DebtResponse;
 import com.cg.fairshare.dto.GroupRequest;
 import com.cg.fairshare.dto.ParticipantRequest;
+import com.cg.fairshare.dto.TransactionDTO;
 import com.cg.fairshare.model.Group;
 import com.cg.fairshare.model.Participant;
 import com.cg.fairshare.repository.GroupRepository;
@@ -53,6 +54,13 @@ public class GroupController {
         debtService.calculateGroupDebts(group);
         List<DebtResponse> debts = debtService.listDebtsForGroup(group);
         return ResponseEntity.ok(debts);
+    }
+
+    @GetMapping("/{groupId}/debts/optimize")
+    public ResponseEntity<List<TransactionDTO>> optimizeGroupDebts(@PathVariable Long groupId) {
+        Group group = groupRepository.getGroupById(groupId);
+        List<TransactionDTO> plan = debtService.optimizeGroupDebts(group);
+        return ResponseEntity.ok(plan);
     }
 
     @DeleteMapping("/deletegroup/{groupId}")
