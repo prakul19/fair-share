@@ -1,11 +1,18 @@
 package com.cg.fairshare.service;
 
 import com.cg.fairshare.dto.DebtResponse;
+import com.cg.fairshare.dto.DebtUpdateRequest;
 import com.cg.fairshare.dto.TransactionDTO;
-import com.cg.fairshare.model.*;
+import com.cg.fairshare.model.Debt;
+import com.cg.fairshare.model.Expense;
+import com.cg.fairshare.model.ExpenseShare;
+import com.cg.fairshare.model.Group;
+import com.cg.fairshare.model.User;
 import com.cg.fairshare.repository.DebtRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -16,10 +23,10 @@ import java.util.stream.Collectors;
 public class DebtService {
 
     private final DebtRepository debtRepository;
-
     @Transactional
     public void calculateGroupDebts(Group group) {
         debtRepository.deleteByGroup(group);
+
         Map<String, Debt> debtMap = new HashMap<>();
         for (Expense expense : group.getExpenses()) {
             User payer = expense.getPaidBy();
@@ -50,11 +57,11 @@ public class DebtService {
     public List<DebtResponse> listDebtsForGroup(Group group) {
         return debtRepository.findByGroupAndIsActiveTrue(group)
                 .stream()
-                .map(d -> {
+                .map(debt -> {
                     DebtResponse dto = new DebtResponse();
-                    dto.setDebtorName(d.getFromUser().getName());
-                    dto.setCreditorName(d.getToUser().getName());
-                    dto.setAmount(d.getAmount());
+                    dto.setDebtorName(debt.getFromUser().getName());
+                    dto.setCreditorName(debt.getToUser().getName());
+                    dto.setAmount(debt.getAmount());
                     return dto;
                 })
                 .collect(Collectors.toList());
@@ -106,5 +113,20 @@ public class DebtService {
             if (newCredBal >  1e-6) creditors.add(Map.entry(c.getKey(), newCredBal));
         }
         return plan;
+    }
+
+    public ResponseEntity<DebtResponse> updateDebt(Long id, DebtUpdateRequest debtUpdateRequest){
+        Optional<Debt> currDebt = debtRepository.findById(id);
+        if(currDebt.isPresent()){
+            Debt debt = currDebt.get();
+
+            if(debtUpdateRequest.getAmount() != null){
+                debt.setAmount(debtUpdateRequest.getAmount());
+            }
+            debt.setActive(true);
+            debtRepository.save(debt);
+            return new ResponseEntity<>(new DebtResponse(), HttpStatus.OK);
+        }
+        return new ResponseEntity<>(new DebtResponse(), HttpStatus.BAD_REQUEST);
     }
 }
