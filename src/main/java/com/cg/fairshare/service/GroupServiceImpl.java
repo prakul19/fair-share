@@ -17,6 +17,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -53,10 +55,15 @@ public class GroupServiceImpl implements IGroupService{
         User user = userRepository.findById(dto.getUserId())
                 .orElseThrow(() -> new RuntimeException("User not found with ID: " + dto.getUserId()));
 
+        boolean exists = participantRepository.existsByGroupAndUser(group, user);
+        if (exists) {
+            throw new RuntimeException("Participant already exists in the group");
+        }
 
         Participant participant = new Participant();
         participant.setUser(user);
         participant.setGroup(group);
+        participant.setJoinedAt(LocalDate.now());
 
         return participantRepository.save(participant);
     }
