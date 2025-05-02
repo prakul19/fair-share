@@ -11,7 +11,8 @@ import com.cg.fairshare.model.Group;
 import com.cg.fairshare.model.User;
 import com.cg.fairshare.repository.DebtRepository;
 import com.cg.fairshare.repository.GroupRepository;
-import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -24,8 +25,10 @@ import java.io.ByteArrayOutputStream;
 import java.util.*;
 import java.util.stream.Collectors;
 
+
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class DebtService {
     @Autowired
     private GroupRepository groupRepository;
@@ -169,5 +172,37 @@ public class DebtService {
             throw new RuntimeException("Failed to generate Excel file: " + e.getMessage(), e);
         }
     }
+
+    public List<String> getUserBalanceInGroup(Long groupId, Long userId) {
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new RuntimeException("Group not found"));
+
+
+
+        // Recalculate debts for safety
+        calculateGroupDebts(group);
+
+        List<Debt> debts = debtRepository.findByGroupAndIsActiveTrue(group);
+        List<String> balanceSummary = new ArrayList<>();
+
+        for (Debt debt : debts) {
+            Long fromId = debt.getFromUser().getId();
+            Long toId = debt.getToUser().getId();
+            double amount = debt.getAmount();
+
+            if (fromId.equals(userId)) {
+                balanceSummary.add("You owe ₹" + amount + " to " + debt.getToUser().getName());
+            } else if (toId.equals(userId)) {
+                balanceSummary.add(debt.getFromUser().getName() + " owes you ₹" + amount);
+            }
+        }
+
+        if (balanceSummary.isEmpty()) {
+            balanceSummary.add("You are all settled up in this group!");
+        }
+
+        return balanceSummary;
+    }
+
 
 }

@@ -13,6 +13,7 @@ import com.cg.fairshare.service.EmailService;
 import com.cg.fairshare.service.GroupServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -108,4 +109,15 @@ public class GroupController {
                 .map(participant -> participant.getUser().getEmail())
                 .collect(Collectors.toList());
     }
+
+    @Transactional
+    @GetMapping("/{groupId}/balance/{userId}")
+    public ResponseEntity<List<String>> getUserBalance(
+            @PathVariable Long groupId,
+            @PathVariable Long userId) {
+
+        List<String> balance = debtService.getUserBalanceInGroup(groupId, userId);
+        return ResponseEntity.ok(balance);
+    }
+
 }
