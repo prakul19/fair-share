@@ -7,4 +7,6 @@ import org.springframework.http.ResponseEntity;
 public interface IExpenseService {
 
     ResponseEntity<?> addExpense(Long groupId, ExpenseRequest expenseRequest);
+
+    ResponseEntity<?> getAllExpenses(Long groupId);
 }
