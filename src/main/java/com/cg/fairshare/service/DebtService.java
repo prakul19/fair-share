@@ -13,26 +13,31 @@ import com.cg.fairshare.repository.DebtRepository;
 import com.cg.fairshare.repository.GroupRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.io.ByteArrayOutputStream;
 import java.util.*;
 import java.util.stream.Collectors;
 
+
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class DebtService {
+    @Autowired
+    private GroupRepository groupRepository;
 
     @Autowired
     private EmailServiceImpl emailService;
 
     @Autowired
     private DebtRepository debtRepository;
-
-    @Autowired
-    private GroupRepository groupRepository;
 
     @Transactional
     public void calculateGroupDebts(Group group) {
@@ -163,5 +168,67 @@ public class DebtService {
             return new ResponseEntity<>("The Debts are settled and everyone is informed via email", HttpStatus.OK);
         }
         return new ResponseEntity<>("No such group exist", HttpStatus.BAD_REQUEST);
+    }
+    public byte[] generateGroupSummaryExcel(Long groupId) {
+        Group group = groupRepository.getGroupById(groupId);
+        List<DebtResponse> summary = listDebtsForGroup(group);
+
+        try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            Sheet sheet = workbook.createSheet("Group Summary");
+
+            // Header row
+            Row headerRow = sheet.createRow(0);
+            String[] headers = {"Debtor", "Creditor", "Amount"};
+            for (int i = 0; i < headers.length; i++) {
+                Cell cell = headerRow.createCell(i);
+                cell.setCellValue(headers[i]);
+            }
+
+            // Data rows
+            int rowNum = 1;
+            for (DebtResponse debt : summary) {
+                Row row = sheet.createRow(rowNum++);
+                row.createCell(0).setCellValue(debt.getDebtorName());
+                row.createCell(1).setCellValue(debt.getCreditorName());
+                row.createCell(2).setCellValue(debt.getAmount());
+            }
+
+            workbook.write(out);
+            return out.toByteArray();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to generate Excel file: " + e.getMessage(), e);
+        }
+    }
+
+    public List<String> getUserBalanceInGroup(Long groupId, Long userId) {
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new RuntimeException("Group not found"));
+
+
+
+        // Recalculate debts for safety
+        calculateGroupDebts(group);
+
+        List<Debt> debts = debtRepository.findByGroupAndIsActiveTrue(group);
+        List<String> balanceSummary = new ArrayList<>();
+
+        for (Debt debt : debts) {
+            Long fromId = debt.getFromUser().getId();
+            Long toId = debt.getToUser().getId();
+            double amount = debt.getAmount();
+
+            if (fromId.equals(userId)) {
+                balanceSummary.add("You owe ₹" + amount + " to " + debt.getToUser().getName());
+            } else if (toId.equals(userId)) {
+                balanceSummary.add(debt.getFromUser().getName() + " owes you ₹" + amount);
+            }
+        }
+
+        if (balanceSummary.isEmpty()) {
+            balanceSummary.add("You are all settled up in this group!");
+        }
+
+        return balanceSummary;
     }
 }
