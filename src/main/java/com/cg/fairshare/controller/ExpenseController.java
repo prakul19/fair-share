@@ -20,7 +20,17 @@ public class ExpenseController {
     }
 
     @GetMapping("/all/{groupId}")
-    public ResponseEntity<?> getAllExpenses(@PathVariable Long groupId) {
-        return expenseService.getAllExpenses(groupId);
+    public ResponseEntity<?> getExpenses(@PathVariable Long groupId) {
+        return expenseService.getExpenses(groupId);
     }
+
+    @PutMapping("/update/{expenseId}")
+    public ResponseEntity<?> updateExpense(@PathVariable Long expenseId,@RequestBody ExpenseRequest expenseRequest) {
+        return expenseService.updateExpense(expenseId, expenseRequest);
+    }
+
+    @DeleteMapping("/delete/{expenseId}")
+     public ResponseEntity<?> deleteExpense(@PathVariable Long expenseId) {
+        return expenseService.deleteExpense(expenseId);
+     }
 }

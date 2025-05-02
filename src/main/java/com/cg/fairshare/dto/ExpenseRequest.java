@@ -8,6 +8,6 @@ public class ExpenseRequest {
     private String description;
     private Double amount;
     private Long paidByUserId;
-    private List<Long> participantIds;
+//    private List<Long> participantIds;
 }
 

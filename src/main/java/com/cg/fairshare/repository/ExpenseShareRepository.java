@@ -10,4 +10,6 @@ import java.util.List;
 public interface ExpenseShareRepository extends JpaRepository<ExpenseShare, Long> {
     List<ExpenseShare> findByUser(User user);
     List<ExpenseShare> findByExpense(Expense expense);
+    void deleteAllByExpense(Expense expense);
+
 }

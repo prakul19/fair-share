@@ -8,5 +8,9 @@ public interface IExpenseService {
 
     ResponseEntity<?> addExpense(Long groupId, ExpenseRequest expenseRequest);
 
-    ResponseEntity<?> getAllExpenses(Long groupId);
+    ResponseEntity<?> getExpenses(Long groupId);
+
+    ResponseEntity<?> updateExpense(Long expenseId, ExpenseRequest expenseRequest);
+
+    ResponseEntity<?> deleteExpense(Long expenseId);
 }
