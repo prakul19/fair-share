@@ -10,12 +10,14 @@ import com.cg.fairshare.model.Participant;
 import com.cg.fairshare.repository.GroupRepository;
 import com.cg.fairshare.service.DebtService;
 import com.cg.fairshare.service.GroupServiceImpl;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Transactional
 @RestController
 @RequestMapping("/groups")
 @RequiredArgsConstructor

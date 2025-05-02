@@ -158,7 +158,7 @@ public class DebtService {
 
                 String text = "You owe " + debt.getToUser().getName() + " $" + debt.getAmount();
 
-                emailService.sendSimpleMessage(fromUserEmail,"subject", "Text");
+                emailService.sendSimpleMessage(fromUserEmail,subject, text);
             }
             return new ResponseEntity<>("The Debts are settled and everyone is informed via email", HttpStatus.OK);
         }
