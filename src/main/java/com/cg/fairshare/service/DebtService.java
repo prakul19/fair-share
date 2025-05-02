@@ -1,6 +1,7 @@
 package com.cg.fairshare.service;
 
 import com.cg.fairshare.dto.DebtResponse;
+import com.cg.fairshare.dto.DebtUpdateRequest;
 import com.cg.fairshare.model.Debt;
 import com.cg.fairshare.model.Expense;
 import com.cg.fairshare.model.ExpenseShare;
@@ -9,6 +10,8 @@ import com.cg.fairshare.model.User;
 import com.cg.fairshare.repository.DebtRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -61,5 +64,20 @@ public class DebtService {
                     return dto;
                 })
                 .collect(Collectors.toList());
+    }
+
+    public ResponseEntity<DebtResponse> updateDebt(Long id, DebtUpdateRequest debtUpdateRequest){
+        Optional<Debt> currDebt = debtRepository.findById(id);
+        if(currDebt.isPresent()){
+            Debt debt = currDebt.get();
+
+            if(debtUpdateRequest.getAmount() != null){
+                debt.setAmount(debtUpdateRequest.getAmount());
+            }
+            debt.setActive(true);
+            debtRepository.save(debt);
+            return new ResponseEntity<>(new DebtResponse(), HttpStatus.OK);
+        }
+        return new ResponseEntity<>(new DebtResponse(), HttpStatus.BAD_REQUEST);
     }
 }

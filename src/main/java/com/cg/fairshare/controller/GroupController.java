@@ -1,6 +1,7 @@
 package com.cg.fairshare.controller;
 
 import com.cg.fairshare.dto.DebtResponse;
+import com.cg.fairshare.dto.DebtUpdateRequest;
 import com.cg.fairshare.dto.GroupRequest;
 import com.cg.fairshare.dto.ParticipantRequest;
 import com.cg.fairshare.model.Group;
@@ -66,5 +67,10 @@ public class GroupController {
             @PathVariable Long userId,
             @PathVariable Long participantId) {
         return ResponseEntity.ok(groupService.removeParticipant(groupId, userId, participantId));
+    }
+
+    @PutMapping("/{debtId}/updateDebt")
+    public ResponseEntity<DebtResponse> UpdateDepts(@PathVariable Long debtId, @RequestBody DebtUpdateRequest debtUpdateRequest){
+            return debtService.updateDebt(debtId,debtUpdateRequest);
     }
 }
