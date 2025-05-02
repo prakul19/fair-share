@@ -8,4 +8,3 @@ public class DebtResponse {
     private String creditorName;
     private Double amount;
 }
-
