@@ -18,4 +18,9 @@ public class ExpenseController {
     public ResponseEntity<?> addExpense(@PathVariable Long groupId, @RequestBody ExpenseRequest expenseRequest) {
         return expenseService.addExpense(groupId, expenseRequest);
     }
+
+    @GetMapping("/all/{groupId}")
+    public ResponseEntity<?> getAllExpenses(@PathVariable Long groupId) {
+        return expenseService.getAllExpenses(groupId);
+    }
 }
