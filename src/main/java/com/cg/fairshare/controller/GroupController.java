@@ -81,4 +81,9 @@ public class GroupController {
     public ResponseEntity<DebtResponse> UpdateDepts(@PathVariable Long debtId, @RequestBody DebtUpdateRequest debtUpdateRequest){
             return debtService.updateDebt(debtId,debtUpdateRequest);
     }
+
+    @GetMapping("/{groupId}/settleDebt")
+    public ResponseEntity<?> settleDebt(@PathVariable Long id){
+        return debtService.settleDebtService(id);
+    }
 }

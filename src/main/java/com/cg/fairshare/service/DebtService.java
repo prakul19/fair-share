@@ -10,8 +10,10 @@ import com.cg.fairshare.model.ExpenseShare;
 import com.cg.fairshare.model.Group;
 import com.cg.fairshare.model.User;
 import com.cg.fairshare.repository.DebtRepository;
+import com.cg.fairshare.repository.GroupRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -23,7 +25,15 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class DebtService {
 
-    private final DebtRepository debtRepository;
+    @Autowired
+    private EmailServiceImpl emailService;
+
+    @Autowired
+    private DebtRepository debtRepository;
+
+    @Autowired
+    private GroupRepository groupRepository;
+
     @Transactional
     public void calculateGroupDebts(Group group) {
         debtRepository.deleteByGroup(group);
@@ -129,5 +139,29 @@ public class DebtService {
             return new ResponseEntity<>(new DebtResponse(), HttpStatus.OK);
         }
         return new ResponseEntity<>(new DebtResponse(), HttpStatus.BAD_REQUEST);
+    }
+
+    public ResponseEntity<?> settleDebtService(Long id) {
+        Optional<Group> getGroup = groupRepository.findById(id);
+
+        if(getGroup.isPresent()){
+            Group group = getGroup.get();
+
+            if(!group.isDebtSettled()){
+                optimizeGroupDebts(group);
+            }
+            List<Debt> list = debtRepository.findByGroupAndIsActiveTrue(group);
+
+            for(Debt debt:list){
+                String fromUserEmail = debt.getFromUser().getEmail(); // email of user who owes to the other user
+                String subject = "Settle your debts";
+
+                String text = "You owe " + debt.getToUser().getName() + " $" + debt.getAmount();
+
+                emailService.sendSimpleMessage(fromUserEmail,"subject", "Text");
+            }
+            return new ResponseEntity<>("The Debts are settled and everyone is informed via email", HttpStatus.OK);
+        }
+        return new ResponseEntity<>("No such group exist", HttpStatus.BAD_REQUEST);
     }
 }

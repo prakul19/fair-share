@@ -34,5 +34,7 @@ public class Group {
     @JsonBackReference
     @OneToMany(mappedBy = "group", cascade = CascadeType.ALL)
     private List<Expense> expenses;
+
+    private boolean isDebtSettled = false;
 }
 
