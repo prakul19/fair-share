@@ -60,4 +60,5 @@ public class GroupController {
     public ResponseEntity<Group> removeParticipant(@PathVariable Long groupId, @PathVariable Long userId, @PathVariable Long participantId) {
         return ResponseEntity.ok(groupService.removeParticipant(groupId, userId, participantId));
     }
+
 }

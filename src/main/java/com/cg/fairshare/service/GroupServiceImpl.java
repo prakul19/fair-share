@@ -53,6 +53,7 @@ public class GroupServiceImpl implements IGroupService{
         User user = userRepository.findById(dto.getUserId())
                 .orElseThrow(() -> new RuntimeException("User not found with ID: " + dto.getUserId()));
 
+
         Participant participant = new Participant();
         participant.setUser(user);
         participant.setGroup(group);

@@ -10,10 +10,12 @@ import java.util.List;
 
 public interface IGroupService {
     Group createGroup(GroupRequest request);
+
     Participant addParticipant(Long groupId, ParticipantRequest dto);
 
     List<Participant> listParticipants(Long groupId);
-    public ResponseEntity<?> deleteGroupById(Long groupId);
+
+    ResponseEntity<?> deleteGroupById(Long groupId);
 
     Group removeParticipant(Long groupId, Long userId, Long participantId);
 }
