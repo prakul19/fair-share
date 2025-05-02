@@ -14,4 +14,6 @@ public interface IGroupService {
 
     List<Participant> listParticipants(Long groupId);
     public ResponseEntity<?> deleteGroupById(Long groupId);
+
+    Group removeParticipant(Long groupId, Long userId, Long participantId);
 }

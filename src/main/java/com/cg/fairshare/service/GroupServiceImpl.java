@@ -71,4 +71,14 @@ public class GroupServiceImpl implements IGroupService{
         groupRepository.deleteById(groupId);
         return new ResponseEntity<>("Your group has been deleted", HttpStatus.OK);
     }
+
+    @Override
+    public Group removeParticipant(Long groupId, Long userId, Long participantId) {
+        Group group = groupRepository.getGroupById(groupId);
+        Optional<User> userOpt = userRepository.findById(userId);
+        if (userOpt.isPresent()) {
+            participantRepository.deleteById(participantId);
+        }
+        return groupRepository.save(group);
+    }
 }
