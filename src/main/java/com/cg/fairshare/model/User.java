@@ -11,6 +11,8 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@ToString(exclude = {"groupParticipants", "expensesPaid", "expenseShares"})
+@EqualsAndHashCode(exclude = {"groupParticipants", "expensesPaid", "expenseShares"})
 public class User {
 
     @Id
@@ -24,7 +26,6 @@ public class User {
 
     private String password;
 
-    // The “parent” side of User → Participant
     @JsonManagedReference
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     private List<Participant> groupParticipants = new ArrayList<>();
@@ -34,11 +35,4 @@ public class User {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     private List<ExpenseShare> expenseShares = new ArrayList<>();
-
-    // Convenience constructor
-    public User(String name, String email, String password) {
-        this.name = name;
-        this.email = email;
-        this.password = password;
-    }
 }

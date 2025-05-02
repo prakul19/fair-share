@@ -32,8 +32,7 @@ public class SecurityConfig {
                                 "/auth/register",
                                 "/auth/login",
                                 "/auth/forgot-password",
-                                "/auth/reset-password",
-                                "/groups/calculatedebt/**"
+                                "/auth/reset-password"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

@@ -12,6 +12,8 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @Table(name = "user_groups")
+@ToString(exclude = {"createdBy", "participants", "expenses"})
+@EqualsAndHashCode(exclude = {"createdBy", "participants", "expenses"})
 public class Group {
 
     @Id
@@ -20,13 +22,11 @@ public class Group {
 
     private String name;
 
-    // Don’t recurse back into Group → createdBy → Group
     @JsonBackReference
     @ManyToOne
     @JoinColumn(name = "created_by_id")
     private User createdBy;
 
-    // The “parent” side of Group → Participant
     @JsonManagedReference
     @OneToMany(mappedBy = "group", cascade = CascadeType.ALL)
     private List<Participant> participants;
@@ -35,3 +35,4 @@ public class Group {
     @OneToMany(mappedBy = "group", cascade = CascadeType.ALL)
     private List<Expense> expenses;
 }
+
