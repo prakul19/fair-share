@@ -10,18 +10,25 @@ import com.cg.fairshare.model.ExpenseShare;
 import com.cg.fairshare.model.Group;
 import com.cg.fairshare.model.User;
 import com.cg.fairshare.repository.DebtRepository;
+import com.cg.fairshare.repository.GroupRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.io.ByteArrayOutputStream;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class DebtService {
+    @Autowired
+    private GroupRepository groupRepository;
 
     private final DebtRepository debtRepository;
     @Transactional
@@ -130,4 +137,37 @@ public class DebtService {
         }
         return new ResponseEntity<>(new DebtResponse(), HttpStatus.BAD_REQUEST);
     }
+
+    public byte[] generateGroupSummaryExcel(Long groupId) {
+        Group group = groupRepository.getGroupById(groupId);
+        List<DebtResponse> summary = listDebtsForGroup(group);
+
+        try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            Sheet sheet = workbook.createSheet("Group Summary");
+
+            // Header row
+            Row headerRow = sheet.createRow(0);
+            String[] headers = {"Debtor", "Creditor", "Amount"};
+            for (int i = 0; i < headers.length; i++) {
+                Cell cell = headerRow.createCell(i);
+                cell.setCellValue(headers[i]);
+            }
+
+            // Data rows
+            int rowNum = 1;
+            for (DebtResponse debt : summary) {
+                Row row = sheet.createRow(rowNum++);
+                row.createCell(0).setCellValue(debt.getDebtorName());
+                row.createCell(1).setCellValue(debt.getCreditorName());
+                row.createCell(2).setCellValue(debt.getAmount());
+            }
+
+            workbook.write(out);
+            return out.toByteArray();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to generate Excel file: " + e.getMessage(), e);
+        }
+    }
+
 }

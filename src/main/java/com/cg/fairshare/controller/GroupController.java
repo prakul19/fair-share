@@ -9,12 +9,14 @@ import com.cg.fairshare.model.Group;
 import com.cg.fairshare.model.Participant;
 import com.cg.fairshare.repository.GroupRepository;
 import com.cg.fairshare.service.DebtService;
+import com.cg.fairshare.service.EmailService;
 import com.cg.fairshare.service.GroupServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/groups")
@@ -24,6 +26,7 @@ public class GroupController {
     private final DebtService debtService;
     private final GroupServiceImpl groupService;
     private final GroupRepository groupRepository;
+    private final EmailService emailService;
 
     @PostMapping
     public ResponseEntity<Group> createGroup(@RequestBody GroupRequest dto) {
@@ -80,5 +83,29 @@ public class GroupController {
     @PutMapping("/{debtId}/updateDebt")
     public ResponseEntity<DebtResponse> UpdateDepts(@PathVariable Long debtId, @RequestBody DebtUpdateRequest debtUpdateRequest){
             return debtService.updateDebt(debtId,debtUpdateRequest);
+    }
+
+    @GetMapping("/{groupId}/debts/download")
+    public ResponseEntity<String> sendGroupSummaryEmail(@PathVariable Long groupId) {
+        // Get the list of participants' emails for the group
+        List<String> participantEmails = getParticipantsEmails(groupId); // This can be a method fetching emails from the participants
+
+        for (String email : participantEmails) {
+            // Send the generated Excel file to each participant's email
+            emailService.sendGroupSummaryEmail(email, groupId);
+        }
+
+        return ResponseEntity.ok("File has been sent to participants.");
+    }
+
+    // Helper method to get participant emails
+    private List<String> getParticipantsEmails(Long groupId) {
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new RuntimeException("Group not found"));
+
+        // Assuming you have a method to get the participants' emails
+        return group.getParticipants().stream()
+                .map(participant -> participant.getUser().getEmail())
+                .collect(Collectors.toList());
     }
 }
