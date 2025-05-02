@@ -53,6 +53,7 @@ public class GroupServiceImpl implements IGroupService{
         User user = userRepository.findById(dto.getUserId())
                 .orElseThrow(() -> new RuntimeException("User not found with ID: " + dto.getUserId()));
 
+
         Participant participant = new Participant();
         participant.setUser(user);
         participant.setGroup(group);
@@ -70,5 +71,15 @@ public class GroupServiceImpl implements IGroupService{
     public ResponseEntity<String> deleteGroupById(Long groupId) {
         groupRepository.deleteById(groupId);
         return new ResponseEntity<>("Your group has been deleted", HttpStatus.OK);
+    }
+
+    @Override
+    public Group removeParticipant(Long groupId, Long userId, Long participantId) {
+        Group group = groupRepository.getGroupById(groupId);
+        Optional<User> userOpt = userRepository.findById(userId);
+        if (userOpt.isPresent()) {
+            participantRepository.deleteById(participantId);
+        }
+        return groupRepository.save(group);
     }
 }
