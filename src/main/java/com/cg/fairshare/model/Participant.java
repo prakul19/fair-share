@@ -3,7 +3,8 @@ package com.cg.fairshare.model;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
-import java.time.LocalDateTime;
+
+import java.time.LocalDate;
 
 @Entity
 @Data
@@ -28,5 +29,5 @@ public class Participant {
     @JoinColumn(name = "group_id")
     private Group group;
 
-    private LocalDateTime joinedAt;
+    private LocalDate joinedAt;
 }
