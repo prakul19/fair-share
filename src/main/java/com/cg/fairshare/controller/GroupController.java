@@ -6,6 +6,7 @@ import com.cg.fairshare.dto.GroupRequest;
 import com.cg.fairshare.dto.ParticipantRequest;
 import com.cg.fairshare.dto.TransactionDTO;
 import com.cg.fairshare.exception.GroupNotFoundException;
+import com.cg.fairshare.exception.ResourceNotFoundException;
 import com.cg.fairshare.model.Group;
 import com.cg.fairshare.model.Participant;
 import com.cg.fairshare.repository.GroupRepository;
@@ -56,14 +57,17 @@ public class GroupController {
 
     @GetMapping("/calculatedebt/{groupId}")
     public ResponseEntity<ApiResponse<Group>> getGroupDetails(@PathVariable Long groupId) {
-        Group group = groupRepository.getGroupById(groupId);
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new ResourceNotFoundException("Group with id " + groupId + " not found"));
         debtService.calculateGroupDebts(group);
         return ResponseUtil.ok(group, "Group details with calculated debts");
     }
 
+
     @GetMapping("/{groupId}/debts")
     public ResponseEntity<ApiResponse<List<DebtResponse>>> listGroupDebts(@PathVariable Long groupId) {
-        Group group = groupRepository.getGroupById(groupId);
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new ResourceNotFoundException("Group with id " + groupId + " not found"));
         debtService.calculateGroupDebts(group);
         List<DebtResponse> debts = debtService.listDebtsForGroup(group);
         return ResponseUtil.ok(debts, "Debts listed successfully");

@@ -21,16 +21,16 @@ public class AuthController {
     @Autowired private IAuthService authService;
     @Autowired private JwtUtil jwtUtil;
 
-    @PostMapping("/login")
-    public ResponseEntity<ApiResponse<String>> login(@Valid @RequestBody LoginRequest req) {
-        String token = authService.login(req);
-        return ResponseUtil.ok(token, "Login successful");
-    }
-
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<Void>> register(@Valid @RequestBody RegisterRequest req) {
         authService.register(req);
         return ResponseUtil.ok("User registered");
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<ApiResponse<String>> login(@Valid @RequestBody LoginRequest req) {
+        String token = authService.login(req);
+        return ResponseUtil.ok(token, "Login successful");
     }
 
     @PostMapping("/forgot-password")
