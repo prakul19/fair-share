@@ -86,11 +86,22 @@ public class GroupServiceImpl implements IGroupService{
 
     @Override
     public Group removeParticipant(Long groupId, Long userId, Long participantId) {
-        Group group = groupRepository.getGroupById(groupId);
-        Optional<User> userOpt = userRepository.findById(userId);
-        if (userOpt.isPresent()) {
-            participantRepository.deleteById(participantId);
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new GroupNotFoundException("Group not found with ID: " + groupId));
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
+
+        Participant participant = participantRepository.findById(participantId)
+                .orElseThrow(() -> new RuntimeException("Participant not found with ID: " + participantId));
+
+        // Check if the participant belongs to the group and the user
+        if (!participant.getGroup().getId().equals(groupId) || !participant.getUser().getId().equals(userId)) {
+            throw new RuntimeException("Participant with ID " + participantId + " is not part of the group with ID " + groupId + " or does not belong to user with ID " + userId);
         }
-        return groupRepository.save(group);
+
+        participantRepository.delete(participant);
+
+        return group;
     }
 }
