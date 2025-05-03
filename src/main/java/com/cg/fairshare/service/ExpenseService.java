@@ -52,6 +52,24 @@ public class ExpenseService implements IExpenseService {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("User is not a member of the group");
             }
 
+            if(expenseRequest.getParticipantIds()==null || expenseRequest.getParticipantIds().isEmpty()){
+                return ResponseEntity.badRequest().body("Must specify at least one participant");
+            }
+
+            List<Participant> participants = new ArrayList<>();
+            for(Long participantId : expenseRequest.getParticipantIds()){
+                Optional<User> user = userRepository.findById(participantId);
+                if(user.isEmpty()){
+                    return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User with ID "+participantId+" not found");
+                }
+
+                Optional<Participant> participant = participantRepository.findByUserAndGroup(user.get(),group.get());
+                if(participant.isEmpty()){
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("User with ID "+participantId+" is not a member of this group");
+                }
+                participants.add(participant.get());
+            }
+
             Expense expense = new Expense();
             expense.setDescription(expenseRequest.getDescription());
             expense.setAmount(expenseRequest.getAmount());
@@ -61,11 +79,11 @@ public class ExpenseService implements IExpenseService {
 
             Expense savedExpense = expenseRepository.save(expense);
 
-            List<Participant> participants = participantRepository.findByGroup(group.get());
+//            List<Participant> participants = participantRepository.findByGroup(group.get());
 
-            if(participants.isEmpty()){
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No participants found");
-            }
+//            if(participants.isEmpty()){
+//                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No participants found");
+//            }
 
             Double shareAmount = expenseRequest.getAmount()/participants.size();
 
@@ -95,6 +113,12 @@ public class ExpenseService implements IExpenseService {
             }
 
             List<Expense> expenses = expenseRepository.findByGroup(group.get());
+
+
+            if(expenses.isEmpty()){
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No expenses found for this group");
+            }
+
             List<ExpenseDTO> expenseDTOS = new ArrayList<>();
 
             for(Expense expense : expenses){
@@ -125,9 +149,28 @@ public class ExpenseService implements IExpenseService {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Paying user not found");
             }
 
+            if(expenseRequest.getParticipantIds()==null || expenseRequest.getParticipantIds().isEmpty()){
+                return ResponseEntity.badRequest().body("Must specify at least one participant");
+            }
+
             boolean isNotMember = participantRepository.findByUserAndGroup(paidByUser.get(), group).isEmpty();
             if (isNotMember) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("User is not a member of the group");
+            }
+
+            List<Participant> participants = new ArrayList<>();
+            for(Long participantId : expenseRequest.getParticipantIds()){
+                Optional<User> user = userRepository.findById(participantId);
+                if(user.isEmpty()){
+                    return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User with ID "+participantId+" not found");
+                }
+
+                Optional<Participant> participant = participantRepository.findByUserAndGroup(user.get(),group);
+                if(participant.isEmpty()){
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("User with ID "+participantId+" is not a member of this group");
+                }
+
+                participants.add(participant.get());
             }
 
             existingExpense.setDescription(expenseRequest.getDescription());
@@ -139,7 +182,6 @@ public class ExpenseService implements IExpenseService {
             List<ExpenseShare> expenseShares = expenseShareRepository.findByExpense(existingExpense);
             expenseShareRepository.deleteAll(expenseShares);
 
-            List<Participant> participants = participantRepository.findByGroup(group);
             Double shareAmount = expenseRequest.getAmount() / participants.size();
             for (Participant participant : participants) {
                 ExpenseShare share = new ExpenseShare();
