@@ -98,10 +98,9 @@ public class GroupController {
         return ResponseUtil.ok(updated, "Debt updated successfully");
     }
 
-    @GetMapping("/{groupId}/settleDebt")
-    public ResponseEntity<ApiResponse<List<TransactionDTO>>> settleDebt(@PathVariable("groupId") Long groupId) {
-        List<TransactionDTO> settled = (List<TransactionDTO>) debtService.settleDebtService(groupId).getBody();
-        return ResponseUtil.ok(settled, "Debt settlement plan generated");
+    @GetMapping("/{groupId}/sendNotifications")
+    public ResponseEntity<?> settleDebt(@PathVariable("groupId") Long groupId) {
+        return debtService.notificationService(groupId);
     }
 
     @GetMapping("/{groupId}/debts/download")
