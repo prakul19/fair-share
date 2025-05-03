@@ -2,6 +2,7 @@ package com.cg.fairshare.service;
 
 import com.cg.fairshare.dto.LoginRequest;
 import com.cg.fairshare.dto.RegisterRequest;
+import com.cg.fairshare.exception.UserAlreadyExistsException;
 import com.cg.fairshare.model.User;
 import com.cg.fairshare.repository.UserRepository;
 import com.cg.fairshare.util.JwtUtil;
@@ -39,10 +40,15 @@ public class AuthServiceImpl implements IAuthService {
 
     @Override
     public User register(RegisterRequest request) {
+        String email = request.getEmail().trim().toLowerCase();
+        if (userRepository.findByEmail(email).isPresent()) {
+            throw new UserAlreadyExistsException("User with email " + email + " already exists");
+        }
+
         String encryptedPassword = passwordEncoder.encode(request.getPassword());
         User user = User.builder()
                 .name(request.getName())
-                .email(request.getEmail().trim().toLowerCase())
+                .email(email)
                 .password(encryptedPassword)
                 .build();
         return userRepository.save(user);

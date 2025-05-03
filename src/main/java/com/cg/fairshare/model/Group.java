@@ -35,6 +35,10 @@ public class Group {
     @OneToMany(mappedBy = "group", cascade = CascadeType.ALL)
     private List<Expense> expenses;
 
+    @JsonBackReference
+    @OneToMany(mappedBy = "group", cascade = CascadeType.ALL)
+    private List<Debt> debts;
+
     private boolean isDebtSettled = false;
 }
 

@@ -5,6 +5,7 @@ import com.cg.fairshare.dto.DebtUpdateRequest;
 import com.cg.fairshare.dto.GroupRequest;
 import com.cg.fairshare.dto.ParticipantRequest;
 import com.cg.fairshare.dto.TransactionDTO;
+import com.cg.fairshare.exception.GroupNotFoundException;
 import com.cg.fairshare.model.Group;
 import com.cg.fairshare.model.Participant;
 import com.cg.fairshare.repository.GroupRepository;
@@ -69,10 +70,13 @@ public class GroupController {
 
     @GetMapping("/{groupId}/debts/optimize")
     public ResponseEntity<ApiResponse<List<TransactionDTO>>> optimizeGroupDebts(@PathVariable Long groupId) {
-        Group group = groupRepository.getGroupById(groupId);
+        Group group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new GroupNotFoundException("Group with ID " + groupId + " not found"));
+
         List<TransactionDTO> plan = debtService.optimizeGroupDebts(group);
         return ResponseUtil.ok(plan, "Optimized debt transactions generated");
     }
+
 
     @DeleteMapping("/deletegroup/{groupId}")
     public ResponseEntity<ApiResponse<Void>> deleteGroup(@PathVariable Long groupId) {

@@ -74,7 +74,12 @@ public class GroupServiceImpl implements IGroupService{
         return participantRepository.findByGroup(group);
     }
 
+    @Override
     public ResponseEntity<String> deleteGroupById(Long groupId) {
+        Optional<Group> groupOptional = groupRepository.findById(groupId);
+        if (groupOptional.isEmpty()) {
+            throw new GroupNotFoundException("Group not found with ID: " + groupId);
+        }
         groupRepository.deleteById(groupId);
         return new ResponseEntity<>("Your group has been deleted", HttpStatus.OK);
     }
