@@ -1,8 +1,10 @@
 package com.cg.fairshare.controller;
 
 import com.cg.fairshare.dto.*;
+import com.cg.fairshare.response.ApiResponse;
 import com.cg.fairshare.service.IAuthService;
 import com.cg.fairshare.util.JwtUtil;
+import com.cg.fairshare.util.ResponseUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,38 +20,38 @@ public class AuthController {
     @Autowired private JwtUtil jwtUtil;
 
     @PostMapping("/login")
-    public ResponseEntity<String> login(@RequestBody LoginRequest req) {
+    public ResponseEntity<ApiResponse<String>> login(@RequestBody LoginRequest req) {
         String token = authService.login(req);
-        return ResponseEntity.ok(token);
+        return ResponseUtil.ok(token, "Login successful");
     }
 
     @PostMapping("/register")
-    public ResponseEntity<String> register(@RequestBody RegisterRequest req) {
+    public ResponseEntity<ApiResponse<Void>> register(@RequestBody RegisterRequest req) {
         authService.register(req);
-        return ResponseEntity.ok("User registered");
+        return ResponseUtil.ok("User registered");
     }
 
     @PostMapping("/forgot-password")
-    public ResponseEntity<String> forgotPassword(@RequestBody Map<String, String> body) {
+    public ResponseEntity<ApiResponse<Void>> forgotPassword(@RequestBody Map<String, String> body) {
         String email = body.get("email");
         authService.createAndSendToken(email);
-        return ResponseEntity.ok("OTP sent to your email");
+        return ResponseUtil.ok("OTP sent to your email");
     }
 
     @PostMapping("/reset-password")
-    public ResponseEntity<String> resetPassword(@RequestBody ResetPasswordRequest req) {
+    public ResponseEntity<ApiResponse<Void>> resetPassword(@RequestBody ResetPasswordRequest req) {
         authService.resetPassword(req.getEmail(), req.getOtp(), req.getNewPassword());
-        return ResponseEntity.ok("Password reset successful");
+        return ResponseUtil.ok("Password reset successful");
     }
 
     @PutMapping("/change-password")
-    public ResponseEntity<String> changePassword(
+    public ResponseEntity<ApiResponse<Void>> changePassword(
             @RequestHeader("Authorization") String authHeader,
             @RequestBody ChangePasswordRequest req) {
 
         String token = authHeader.substring(7);
         String email = jwtUtil.extractUsername(token);
         authService.changePasswordAuthenticated(email, req.getOldPassword(), req.getNewPassword());
-        return ResponseEntity.ok("Password changed successfully");
+        return ResponseUtil.ok("Password changed successfully");
     }
 }

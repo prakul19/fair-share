@@ -8,9 +8,11 @@ import com.cg.fairshare.dto.TransactionDTO;
 import com.cg.fairshare.model.Group;
 import com.cg.fairshare.model.Participant;
 import com.cg.fairshare.repository.GroupRepository;
+import com.cg.fairshare.response.ApiResponse;
 import com.cg.fairshare.service.DebtService;
 import com.cg.fairshare.service.EmailService;
 import com.cg.fairshare.service.GroupServiceImpl;
+import com.cg.fairshare.util.ResponseUtil;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -31,100 +33,97 @@ public class GroupController {
     private final EmailService emailService;
 
     @PostMapping
-    public ResponseEntity<Group> createGroup(@RequestBody GroupRequest dto) {
-        return ResponseEntity.ok(groupService.createGroup(dto));
+    public ResponseEntity<ApiResponse<Group>> createGroup(@RequestBody GroupRequest dto) {
+        Group group = groupService.createGroup(dto);
+        return ResponseUtil.ok(group, "Group created successfully");
     }
 
     @PostMapping("/{groupId}/participants")
-    public ResponseEntity<Participant> addParticipant(
+    public ResponseEntity<ApiResponse<Participant>> addParticipant(
             @PathVariable Long groupId,
             @RequestBody ParticipantRequest dto) {
-        return ResponseEntity.ok(groupService.addParticipant(groupId, dto));
+        Participant participant = groupService.addParticipant(groupId, dto);
+        return ResponseUtil.ok(participant, "Participant added successfully");
     }
 
     @GetMapping("/{groupId}/participants")
-    public ResponseEntity<List<Participant>> listParticipants(@PathVariable Long groupId) {
-        return ResponseEntity.ok(groupService.listParticipants(groupId));
+    public ResponseEntity<ApiResponse<List<Participant>>> listParticipants(@PathVariable Long groupId) {
+        List<Participant> participants = groupService.listParticipants(groupId);
+        return ResponseUtil.ok(participants, "Participants fetched successfully");
     }
 
     @GetMapping("/calculatedebt/{groupId}")
-    public ResponseEntity<Group> getGroupDetails(@PathVariable Long groupId) {
+    public ResponseEntity<ApiResponse<Group>> getGroupDetails(@PathVariable Long groupId) {
         Group group = groupRepository.getGroupById(groupId);
         debtService.calculateGroupDebts(group);
-        return ResponseEntity.ok(group);
+        return ResponseUtil.ok(group, "Group details with calculated debts");
     }
 
     @GetMapping("/{groupId}/debts")
-    public ResponseEntity<List<DebtResponse>> listGroupDebts(@PathVariable Long groupId) {
+    public ResponseEntity<ApiResponse<List<DebtResponse>>> listGroupDebts(@PathVariable Long groupId) {
         Group group = groupRepository.getGroupById(groupId);
         debtService.calculateGroupDebts(group);
         List<DebtResponse> debts = debtService.listDebtsForGroup(group);
-        return ResponseEntity.ok(debts);
+        return ResponseUtil.ok(debts, "Debts listed successfully");
     }
 
     @GetMapping("/{groupId}/debts/optimize")
-    public ResponseEntity<List<TransactionDTO>> optimizeGroupDebts(@PathVariable Long groupId) {
+    public ResponseEntity<ApiResponse<List<TransactionDTO>>> optimizeGroupDebts(@PathVariable Long groupId) {
         Group group = groupRepository.getGroupById(groupId);
         List<TransactionDTO> plan = debtService.optimizeGroupDebts(group);
-        return ResponseEntity.ok(plan);
+        return ResponseUtil.ok(plan, "Optimized debt transactions generated");
     }
 
     @DeleteMapping("/deletegroup/{groupId}")
-    public ResponseEntity<String> deleteGroup(@PathVariable Long groupId){
-        return groupService.deleteGroupById(groupId);
+    public ResponseEntity<ApiResponse<Void>> deleteGroup(@PathVariable Long groupId) {
+        String result = groupService.deleteGroupById(groupId).getBody();
+        return ResponseUtil.ok(result);
     }
 
     @DeleteMapping("/{groupId}/participants/{userId}/{participantId}")
-    public ResponseEntity<Group> removeParticipant(
+    public ResponseEntity<ApiResponse<Group>> removeParticipant(
             @PathVariable Long groupId,
             @PathVariable Long userId,
             @PathVariable Long participantId) {
-        return ResponseEntity.ok(groupService.removeParticipant(groupId, userId, participantId));
+        Group updated = groupService.removeParticipant(groupId, userId, participantId);
+        return ResponseUtil.ok(updated, "Participant removed successfully");
     }
 
     @PutMapping("/{debtId}/updateDebt")
-    public ResponseEntity<DebtResponse> UpdateDepts(@PathVariable Long debtId, @RequestBody DebtUpdateRequest debtUpdateRequest){
-            return debtService.updateDebt(debtId,debtUpdateRequest);
+    public ResponseEntity<ApiResponse<DebtResponse>> updateDebt(
+            @PathVariable Long debtId,
+            @RequestBody DebtUpdateRequest debtUpdateRequest) {
+        DebtResponse updated = debtService.updateDebt(debtId, debtUpdateRequest).getBody();
+        return ResponseUtil.ok(updated, "Debt updated successfully");
     }
 
     @GetMapping("/{groupId}/settleDebt")
-    public ResponseEntity<?> settleDebt(@PathVariable Long id){
-        return debtService.settleDebtService(id);
+    public ResponseEntity<ApiResponse<List<TransactionDTO>>> settleDebt(@PathVariable("groupId") Long groupId) {
+        List<TransactionDTO> settled = (List<TransactionDTO>) debtService.settleDebtService(groupId).getBody();
+        return ResponseUtil.ok(settled, "Debt settlement plan generated");
     }
-
 
     @GetMapping("/{groupId}/debts/download")
-    public ResponseEntity<String> sendGroupSummaryEmail(@PathVariable Long groupId) {
-        // Get the list of participants' emails for the group
-        List<String> participantEmails = getParticipantsEmails(groupId); // This can be a method fetching emails from the participants
-
-        for (String email : participantEmails) {
-            // Send the generated Excel file to each participant's email
-            emailService.sendGroupSummaryEmail(email, groupId);
-        }
-
-        return ResponseEntity.ok("File has been sent to participants.");
+    public ResponseEntity<ApiResponse<Void>> sendGroupSummaryEmail(@PathVariable Long groupId) {
+        List<String> participantEmails = getParticipantsEmails(groupId);
+        participantEmails.forEach(email -> emailService.sendGroupSummaryEmail(email, groupId));
+        return ResponseUtil.ok("Summary email sent to all participants");
     }
 
-    // Helper method to get participant emails
+    @GetMapping("/{groupId}/balance/{userId}")
+    public ResponseEntity<ApiResponse<List<String>>> getUserBalance(
+            @PathVariable Long groupId,
+            @PathVariable Long userId) {
+        List<String> balance = debtService.getUserBalanceInGroup(groupId, userId);
+        return ResponseUtil.ok(balance, "User balance fetched successfully");
+    }
+
+    // Helper to fetch participant emails
     private List<String> getParticipantsEmails(Long groupId) {
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new RuntimeException("Group not found"));
-
-        // Assuming you have a method to get the participants' emails
         return group.getParticipants().stream()
-                .map(participant -> participant.getUser().getEmail())
+                .map(p -> p.getUser().getEmail())
                 .collect(Collectors.toList());
     }
-
-    @Transactional
-    @GetMapping("/{groupId}/balance/{userId}")
-    public ResponseEntity<List<String>> getUserBalance(
-            @PathVariable Long groupId,
-            @PathVariable Long userId) {
-
-        List<String> balance = debtService.getUserBalanceInGroup(groupId, userId);
-        return ResponseEntity.ok(balance);
-    }
-
 }
