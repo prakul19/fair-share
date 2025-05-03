@@ -7,6 +7,7 @@ import com.cg.fairshare.dto.TransactionDTO;
 import com.cg.fairshare.model.*;
 import com.cg.fairshare.repository.DebtRepository;
 import com.cg.fairshare.repository.GroupRepository;
+import com.cg.fairshare.response.ApiResponse;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -142,29 +143,39 @@ public class DebtService {
         return new ResponseEntity<>(new DebtResponse(), HttpStatus.BAD_REQUEST);
     }
 
-    public ResponseEntity<?> settleDebtService(Long id) {
+    public ResponseEntity<?> notificationService(Long id) {
         Optional<Group> getGroup = groupRepository.findById(id);
-
         if(getGroup.isPresent()){
             Group group = getGroup.get();
-
-            if(!group.isDebtSettled()){
-                optimizeGroupDebts(group);
+            List<TransactionDTO> optimizedDebts = optimizeGroupDebts(group);
+            for (TransactionDTO txn : optimizedDebts) {
+                Optional<User> fromUserOpt = group.getParticipants().stream()
+                        .map(p -> p.getUser())
+                        .filter(u -> u.getName().equals(txn.getFrom()))
+                        .findFirst();
+                if (fromUserOpt.isPresent()) {
+                    String fromUserEmail = fromUserOpt.get().getEmail();
+                    String subject = "Settle your debts";
+                    String text = "You owe " + txn.getTo() + " Rs." + txn.getAmount();
+                    emailService.sendSimpleMessage(fromUserEmail, subject, text);
+                }
             }
-            List<Debt> list = debtRepository.findByGroupAndIsActiveTrue(group);
-
-            for(Debt debt:list){
-                String fromUserEmail = debt.getFromUser().getEmail(); // email of user who owes to the other user
-                String subject = "Settle your debts";
-
-                String text = "You owe " + debt.getToUser().getName() + " $" + debt.getAmount();
-
-                emailService.sendSimpleMessage(fromUserEmail,subject, text);
-            }
-            return new ResponseEntity<>("The Debts are settled and everyone is informed via email", HttpStatus.OK);
+            ApiResponse<String> response = new ApiResponse<>(
+                    true,
+                    "Optimized Debts settlement notifications have been sent via email",
+                    null
+            );
+            return ResponseEntity.ok(response);
         }
-        return new ResponseEntity<>("No such group exist", HttpStatus.BAD_REQUEST);
+        ApiResponse<String> response = new ApiResponse<>(
+                false,
+                "No such group exists",
+                null
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
+
+
     public byte[] generateGroupSummaryExcel(Long groupId) {
         Group group = groupRepository.getGroupById(groupId);
         List<DebtResponse> summary = listDebtsForGroup(group);
@@ -218,6 +229,8 @@ public class DebtService {
 
         // Use optimized debt calculation
         List<TransactionDTO> optimizedTransactions = optimizeGroupDebts(group);
+        // Recalculate debts for safety
+        calculateGroupDebts(group);
 
         List<String> balanceSummary = new ArrayList<>();
 
