@@ -2,6 +2,7 @@ package com.cg.fairshare.service;
 
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -13,6 +14,7 @@ public class EmailServiceImpl implements EmailService {
     @Autowired private JavaMailSender mailSender;
 
     @Autowired
+    @Lazy
     private DebtService debtService;
 
     @Override
