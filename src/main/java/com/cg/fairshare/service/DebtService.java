@@ -4,13 +4,10 @@ import com.cg.fairshare.dto.DebtResponse;
 import com.cg.fairshare.dto.DebtUpdateRequest;
 
 import com.cg.fairshare.dto.TransactionDTO;
-import com.cg.fairshare.model.Debt;
-import com.cg.fairshare.model.Expense;
-import com.cg.fairshare.model.ExpenseShare;
-import com.cg.fairshare.model.Group;
-import com.cg.fairshare.model.User;
+import com.cg.fairshare.model.*;
 import com.cg.fairshare.repository.DebtRepository;
 import com.cg.fairshare.repository.GroupRepository;
+import com.cg.fairshare.response.ApiResponse;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,7 +31,7 @@ public class DebtService {
     private GroupRepository groupRepository;
 
     @Autowired
-    private EmailServiceImpl emailService;
+    private EmailService emailService;
 
     @Autowired
     private DebtRepository debtRepository;
@@ -146,29 +143,39 @@ public class DebtService {
         return new ResponseEntity<>(new DebtResponse(), HttpStatus.BAD_REQUEST);
     }
 
-    public ResponseEntity<?> settleDebtService(Long id) {
+    public ResponseEntity<?> notificationService(Long id) {
         Optional<Group> getGroup = groupRepository.findById(id);
-
         if(getGroup.isPresent()){
             Group group = getGroup.get();
-
-            if(!group.isDebtSettled()){
-                optimizeGroupDebts(group);
+            List<TransactionDTO> optimizedDebts = optimizeGroupDebts(group);
+            for (TransactionDTO txn : optimizedDebts) {
+                Optional<User> fromUserOpt = group.getParticipants().stream()
+                        .map(p -> p.getUser())
+                        .filter(u -> u.getName().equals(txn.getFrom()))
+                        .findFirst();
+                if (fromUserOpt.isPresent()) {
+                    String fromUserEmail = fromUserOpt.get().getEmail();
+                    String subject = "Settle your debts";
+                    String text = "You owe " + txn.getTo() + " Rs." + txn.getAmount();
+                    emailService.sendSimpleMessage(fromUserEmail, subject, text);
+                }
             }
-            List<Debt> list = debtRepository.findByGroupAndIsActiveTrue(group);
-
-            for(Debt debt:list){
-                String fromUserEmail = debt.getFromUser().getEmail(); // email of user who owes to the other user
-                String subject = "Settle your debts";
-
-                String text = "You owe " + debt.getToUser().getName() + " $" + debt.getAmount();
-
-                emailService.sendSimpleMessage(fromUserEmail,subject, text);
-            }
-            return new ResponseEntity<>("The Debts are settled and everyone is informed via email", HttpStatus.OK);
+            ApiResponse<String> response = new ApiResponse<>(
+                    true,
+                    "Optimized Debts settlement notifications have been sent via email",
+                    null
+            );
+            return ResponseEntity.ok(response);
         }
-        return new ResponseEntity<>("No such group exist", HttpStatus.BAD_REQUEST);
+        ApiResponse<String> response = new ApiResponse<>(
+                false,
+                "No such group exists",
+                null
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
+
+
     public byte[] generateGroupSummaryExcel(Long groupId) {
         Group group = groupRepository.getGroupById(groupId);
         List<DebtResponse> summary = listDebtsForGroup(group);
@@ -205,23 +212,33 @@ public class DebtService {
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new RuntimeException("Group not found"));
 
+        // Check if user exists in group
+        boolean userFound = false;
+        String userName = null;
+        for (Participant participant : group.getParticipants()) {
+            if (participant.getUser().getId().equals(userId)) {
+                userFound = true;
+                userName = participant.getUser().getName();
+                break;
+            }
+        }
 
+        if (!userFound) {
+            throw new RuntimeException("User not found in the group");
+        }
 
+        // Use optimized debt calculation
+        List<TransactionDTO> optimizedTransactions = optimizeGroupDebts(group);
         // Recalculate debts for safety
         calculateGroupDebts(group);
 
-        List<Debt> debts = debtRepository.findByGroupAndIsActiveTrue(group);
         List<String> balanceSummary = new ArrayList<>();
 
-        for (Debt debt : debts) {
-            Long fromId = debt.getFromUser().getId();
-            Long toId = debt.getToUser().getId();
-            double amount = debt.getAmount();
-
-            if (fromId.equals(userId)) {
-                balanceSummary.add("You owe ₹" + amount + " to " + debt.getToUser().getName());
-            } else if (toId.equals(userId)) {
-                balanceSummary.add(debt.getFromUser().getName() + " owes you ₹" + amount);
+        for (TransactionDTO tx : optimizedTransactions) {
+            if (tx.getFrom().equals(userName)) {
+                balanceSummary.add("You owe ₹" + tx.getAmount() + " to " + tx.getTo());
+            } else if (tx.getTo().equals(userName)) {
+                balanceSummary.add(tx.getFrom() + " owes you ₹" + tx.getAmount());
             }
         }
 

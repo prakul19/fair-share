@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.ResponseExtractor;
 
 import java.time.LocalDate;
@@ -51,6 +52,24 @@ public class ExpenseService implements IExpenseService {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("User is not a member of the group");
             }
 
+            if(expenseRequest.getParticipantIds()==null || expenseRequest.getParticipantIds().isEmpty()){
+                return ResponseEntity.badRequest().body("Must specify at least one participant");
+            }
+
+            List<Participant> participants = new ArrayList<>();
+            for(Long participantId : expenseRequest.getParticipantIds()){
+                Optional<User> user = userRepository.findById(participantId);
+                if(user.isEmpty()){
+                    return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User with ID "+participantId+" not found");
+                }
+
+                Optional<Participant> participant = participantRepository.findByUserAndGroup(user.get(),group.get());
+                if(participant.isEmpty()){
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("User with ID "+participantId+" is not a member of this group");
+                }
+                participants.add(participant.get());
+            }
+
             Expense expense = new Expense();
             expense.setDescription(expenseRequest.getDescription());
             expense.setAmount(expenseRequest.getAmount());
@@ -60,11 +79,11 @@ public class ExpenseService implements IExpenseService {
 
             Expense savedExpense = expenseRepository.save(expense);
 
-            List<Participant> participants = participantRepository.findByGroup(group.get());
+//            List<Participant> participants = participantRepository.findByGroup(group.get());
 
-            if(participants.isEmpty()){
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No participants found");
-            }
+//            if(participants.isEmpty()){
+//                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No participants found");
+//            }
 
             Double shareAmount = expenseRequest.getAmount()/participants.size();
 
@@ -86,7 +105,7 @@ public class ExpenseService implements IExpenseService {
     }
 
     @Override
-    public ResponseEntity<?> getAllExpenses(Long groupId) {
+    public ResponseEntity<?> getExpenses(Long groupId) {
         try{
             Optional<Group> group = groupRepository.findById(groupId);
             if(group.isEmpty()){
@@ -94,6 +113,12 @@ public class ExpenseService implements IExpenseService {
             }
 
             List<Expense> expenses = expenseRepository.findByGroup(group.get());
+
+
+            if(expenses.isEmpty()){
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No expenses found for this group");
+            }
+
             List<ExpenseDTO> expenseDTOS = new ArrayList<>();
 
             for(Expense expense : expenses){
@@ -105,6 +130,92 @@ public class ExpenseService implements IExpenseService {
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error creating expense: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public ResponseEntity<?> updateExpense(Long expenseId, ExpenseRequest expenseRequest) {
+        try{
+            Optional<Expense> expense = expenseRepository.findById(expenseId);
+            if (expense.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Expense not found");
+            }
+
+            Expense existingExpense = expense.get();
+            Group group = existingExpense.getGroup();
+
+            Optional<User> paidByUser = userRepository.findById(expenseRequest.getPaidByUserId());
+            if (paidByUser.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Paying user not found");
+            }
+
+            if(expenseRequest.getParticipantIds()==null || expenseRequest.getParticipantIds().isEmpty()){
+                return ResponseEntity.badRequest().body("Must specify at least one participant");
+            }
+
+            boolean isNotMember = participantRepository.findByUserAndGroup(paidByUser.get(), group).isEmpty();
+            if (isNotMember) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("User is not a member of the group");
+            }
+
+            List<Participant> participants = new ArrayList<>();
+            for(Long participantId : expenseRequest.getParticipantIds()){
+                Optional<User> user = userRepository.findById(participantId);
+                if(user.isEmpty()){
+                    return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User with ID "+participantId+" not found");
+                }
+
+                Optional<Participant> participant = participantRepository.findByUserAndGroup(user.get(),group);
+                if(participant.isEmpty()){
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("User with ID "+participantId+" is not a member of this group");
+                }
+
+                participants.add(participant.get());
+            }
+
+            existingExpense.setDescription(expenseRequest.getDescription());
+            existingExpense.setAmount(expenseRequest.getAmount());
+            existingExpense.setPaidBy(paidByUser.get());
+            existingExpense.setCreatedAt(LocalDateTime.now());
+
+
+            List<ExpenseShare> expenseShares = expenseShareRepository.findByExpense(existingExpense);
+            expenseShareRepository.deleteAll(expenseShares);
+
+            Double shareAmount = expenseRequest.getAmount() / participants.size();
+            for (Participant participant : participants) {
+                ExpenseShare share = new ExpenseShare();
+                share.setExpense(existingExpense);
+                share.setUser(participant.getUser());
+                share.setAmount(shareAmount);
+                expenseShareRepository.save(share);
+            }
+
+            expenseRepository.save(existingExpense);
+
+            return ResponseEntity.ok("Expense updated successfully");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error updating expense: " + e.getMessage());
+        }
+
+    }
+
+    @Override
+    @Transactional
+    public ResponseEntity<?> deleteExpense(Long expenseId) {
+        try{
+            Optional<Expense> expense = expenseRepository.findById(expenseId);
+            if (expense.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Expense not found");
+            }
+
+            expenseShareRepository.deleteAllByExpense(expense.get());
+
+            expenseRepository.delete(expense.get());
+
+            return ResponseEntity.ok("Expense deleted successfully");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error deleting expense: " + e.getMessage());
         }
     }
 
@@ -141,10 +252,6 @@ public class ExpenseService implements IExpenseService {
 
         return dto;
     }
-
-
-
-
 
     private ExpenseShareResponse convertToExpenseShareResponse(ExpenseShare share) {
         ExpenseShareResponse response = new ExpenseShareResponse();

@@ -4,6 +4,7 @@ import com.cg.fairshare.model.PasswordResetToken;
 import com.cg.fairshare.model.User;
 import com.cg.fairshare.repository.PasswordResetTokenRepository;
 import com.cg.fairshare.repository.UserRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -23,11 +24,14 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         return String.valueOf(new Random().nextInt(900_000) + 100_000);
     }
 
+    @Transactional
     @Override
-    public void createAndSendToken(String email){
+    public void createAndSendToken(String email) {
         User user = userRepo.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("No user found with email: " + email));
+
         tokenRepo.deleteByEmail(email);
+
         String otp = generateOtp();
         PasswordResetToken prt = new PasswordResetToken();
         prt.setEmail(email);
