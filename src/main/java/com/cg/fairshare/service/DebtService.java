@@ -31,7 +31,7 @@ public class DebtService {
     private GroupRepository groupRepository;
 
     @Autowired
-    private EmailServiceImpl emailService;
+    private EmailService emailService;
 
     @Autowired
     private DebtRepository debtRepository;
