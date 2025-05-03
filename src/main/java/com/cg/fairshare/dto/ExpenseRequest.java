@@ -2,6 +2,7 @@ package com.cg.fairshare.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import lombok.Data;
 import java.util.List;
 
@@ -10,10 +11,11 @@ public class ExpenseRequest {
     @NotNull(message = "Description cant be null")
     private String description;
 
-    @NotBlank(message = "Amount is required")
+    @NotNull(message = "Amount is required")
+    @Positive(message = "Amount should be positive")
     private Double amount;
 
-    @NotBlank(message = "User id is required")
+    @NotNull(message = "User id is required")
     private Long paidByUserId;
 
     private List<Long> participantIds;
