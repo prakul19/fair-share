@@ -15,6 +15,7 @@ import com.cg.fairshare.service.EmailService;
 import com.cg.fairshare.service.GroupServiceImpl;
 import com.cg.fairshare.util.ResponseUtil;
 import jakarta.transaction.Transactional;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -34,7 +35,7 @@ public class GroupController {
     private final EmailService emailService;
 
     @PostMapping
-    public ResponseEntity<ApiResponse<Group>> createGroup(@RequestBody GroupRequest dto) {
+    public ResponseEntity<ApiResponse<Group>> createGroup(@Valid @RequestBody GroupRequest dto) {
         Group group = groupService.createGroup(dto);
         return ResponseUtil.ok(group, "Group created successfully");
     }
@@ -42,7 +43,7 @@ public class GroupController {
     @PostMapping("/{groupId}/participants")
     public ResponseEntity<ApiResponse<Participant>> addParticipant(
             @PathVariable Long groupId,
-            @RequestBody ParticipantRequest dto) {
+            @Valid @RequestBody ParticipantRequest dto) {
         Participant participant = groupService.addParticipant(groupId, dto);
         return ResponseUtil.ok(participant, "Participant added successfully");
     }

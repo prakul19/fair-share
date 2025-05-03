@@ -23,4 +23,11 @@ public class ResponseUtil {
                 .status(status)
                 .body(new ApiResponse<>(false, msg, null));
     }
+
+    public static <T> ResponseEntity<ApiResponse<T>> errorValid(int status, String msg,T data) {
+        return ResponseEntity
+                .status(status)
+                .body(new ApiResponse<>(false, msg, data));
+    }
+
 }

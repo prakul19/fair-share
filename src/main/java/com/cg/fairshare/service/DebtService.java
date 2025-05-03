@@ -4,11 +4,7 @@ import com.cg.fairshare.dto.DebtResponse;
 import com.cg.fairshare.dto.DebtUpdateRequest;
 
 import com.cg.fairshare.dto.TransactionDTO;
-import com.cg.fairshare.model.Debt;
-import com.cg.fairshare.model.Expense;
-import com.cg.fairshare.model.ExpenseShare;
-import com.cg.fairshare.model.Group;
-import com.cg.fairshare.model.User;
+import com.cg.fairshare.model.*;
 import com.cg.fairshare.repository.DebtRepository;
 import com.cg.fairshare.repository.GroupRepository;
 import com.cg.fairshare.response.ApiResponse;
@@ -35,7 +31,7 @@ public class DebtService {
     private GroupRepository groupRepository;
 
     @Autowired
-    private EmailServiceImpl emailService;
+    private EmailService emailService;
 
     @Autowired
     private DebtRepository debtRepository;
@@ -216,21 +212,33 @@ public class DebtService {
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new RuntimeException("Group not found"));
 
+        // Check if user exists in group
+        boolean userFound = false;
+        String userName = null;
+        for (Participant participant : group.getParticipants()) {
+            if (participant.getUser().getId().equals(userId)) {
+                userFound = true;
+                userName = participant.getUser().getName();
+                break;
+            }
+        }
+
+        if (!userFound) {
+            throw new RuntimeException("User not found in the group");
+        }
+
+        // Use optimized debt calculation
+        List<TransactionDTO> optimizedTransactions = optimizeGroupDebts(group);
         // Recalculate debts for safety
         calculateGroupDebts(group);
 
-        List<Debt> debts = debtRepository.findByGroupAndIsActiveTrue(group);
         List<String> balanceSummary = new ArrayList<>();
 
-        for (Debt debt : debts) {
-            Long fromId = debt.getFromUser().getId();
-            Long toId = debt.getToUser().getId();
-            double amount = debt.getAmount();
-
-            if (fromId.equals(userId)) {
-                balanceSummary.add("You owe ₹" + amount + " to " + debt.getToUser().getName());
-            } else if (toId.equals(userId)) {
-                balanceSummary.add(debt.getFromUser().getName() + " owes you ₹" + amount);
+        for (TransactionDTO tx : optimizedTransactions) {
+            if (tx.getFrom().equals(userName)) {
+                balanceSummary.add("You owe ₹" + tx.getAmount() + " to " + tx.getTo());
+            } else if (tx.getTo().equals(userName)) {
+                balanceSummary.add(tx.getFrom() + " owes you ₹" + tx.getAmount());
             }
         }
 
