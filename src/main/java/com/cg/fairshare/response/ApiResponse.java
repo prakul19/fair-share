@@ -2,14 +2,14 @@ package com.cg.fairshare.response;
 
 import lombok.Data;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 @Data
 public class ApiResponse<T> {
     private boolean success;
     private String message;
     private T data;
-    private Instant timestamp = Instant.now();
+    private LocalDateTime timestamp = LocalDateTime.now();
 
     public ApiResponse(boolean success, String message, T data) {
         this.success = success;
