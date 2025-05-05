@@ -4,20 +4,19 @@ import com.cg.fairshare.dto.*;
 import com.cg.fairshare.model.*;
 import com.cg.fairshare.repository.*;
 import com.cg.fairshare.util.ResponseUtil;
-import org.apache.coyote.Response;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.ResponseExtractor;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+@Slf4j
 @Service
 public class ExpenseService implements IExpenseService {
     @Autowired
@@ -35,9 +34,11 @@ public class ExpenseService implements IExpenseService {
     @Autowired
     private ParticipantRepository participantRepository;
 
+    @Transactional
     @Override
     public ResponseEntity<?> addExpense(Long groupId, ExpenseRequest expenseRequest) {
-        try{
+
+          try{
 
             Optional<User> paidByUser = userRepository.findById(expenseRequest.getPaidByUserId());
 
@@ -78,9 +79,11 @@ public class ExpenseService implements IExpenseService {
             expense.setGroup(group.get());
             expense.setCreatedAt(LocalDateTime.now());
 
+
             Expense savedExpense = expenseRepository.save(expense);
 
 
+            List<ExpenseShare> expenseShares = new ArrayList<>();
             Double shareAmount = expenseRequest.getAmount()/participants.size();
 
             for(Participant participant : participants){
@@ -88,11 +91,12 @@ public class ExpenseService implements IExpenseService {
                 share.setExpense(savedExpense);
                 share.setUser(participant.getUser());
                 share.setAmount(shareAmount);
-
+                expenseShares.add(share);
                 expenseShareRepository.save(share);
             }
+            expense.setExpenseShares(expenseShares);
 
-            ExpenseDTO expenseDTO = convertToExpenseDTO(savedExpense);
+            ExpenseDTO expenseDTO = convertToExpenseDTO(expense);
             return ResponseUtil.ok(expenseDTO,"Expense added and split equally among the members");
 
         } catch (Exception e) {
@@ -219,6 +223,8 @@ public class ExpenseService implements IExpenseService {
     }
 
     private ExpenseDTO convertToExpenseDTO(Expense expense) {
+
+
         ExpenseDTO dto = new ExpenseDTO();
         dto.setId(expense.getId());
         dto.setDescription(expense.getDescription());
@@ -242,11 +248,12 @@ public class ExpenseService implements IExpenseService {
 
         List<ExpenseShare> expenseShares = expense.getExpenseShares();
         List<ExpenseShareResponse> shareResponses = new ArrayList<>();
-
+        log.error(String.valueOf(expenseShares.isEmpty()));
         for(ExpenseShare share : expenseShares){
             ExpenseShareResponse shareResponse = convertToExpenseShareResponse(share);
             shareResponses.add(shareResponse);
         }
+
         dto.setExpenseShareResponseList(shareResponses);
 
         return dto;
@@ -256,6 +263,7 @@ public class ExpenseService implements IExpenseService {
         ExpenseShareResponse response = new ExpenseShareResponse();
         response.setId(share.getId());
         response.setAmount(share.getAmount());
+
 
         User shareUser = share.getUser();
         UserResponse userResponse = new UserResponse();

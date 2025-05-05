@@ -114,7 +114,7 @@ public class GroupController {
     @GetMapping("/{groupId}/debts/download")
     public ResponseEntity<ApiResponse<List<DebtResponse>>> sendGroupSummaryEmail(@PathVariable Long groupId) {
         Group group = groupRepository.getGroupById(groupId);
-        debtService.calculateGroupDebts(group);
+        debtService.optimizeGroupDebts(group);
         List<DebtResponse> debts = debtService.listDebtsForGroup(group);
         List<String> participantEmails = getParticipantsEmails(groupId);
         participantEmails.forEach(email -> emailService.sendGroupSummaryEmail(email, groupId));
