@@ -11,7 +11,7 @@ public class ChangePasswordRequest {
 
     @NotNull(message = "Password cannot be null")
     @Size(min = 8, message = "Password should be at least 8 characters long")
-    @Pattern(regexp = "^(?=.*[0-9])(?=.*[a-zA-Z]).{8,}$", message = "Password must contain one letter and one number")
+    @Pattern(regexp = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!])(?=\\S+$).{8,20}$",message = "Password must have at least one lowercase, one uppercase, one digit and one special character. No whitespaces are allowed and should be 8-20 characters long")
     private String newPassword;
 
 }
