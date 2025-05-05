@@ -177,7 +177,7 @@ public class DebtService {
 
     public byte[] generateGroupSummaryExcel(Long groupId) {
         Group group = groupRepository.getGroupById(groupId);
-        List<DebtResponse> summary = listDebtsForGroup(group);
+        List<Debt> activeDebts = debtRepository.findByGroupAndIsActiveTrue(group);
 
         try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             Sheet sheet = workbook.createSheet("Group Summary");
@@ -192,10 +192,10 @@ public class DebtService {
 
             // Data rows
             int rowNum = 1;
-            for (DebtResponse debt : summary) {
+            for (Debt debt : activeDebts) {
                 Row row = sheet.createRow(rowNum++);
-                row.createCell(0).setCellValue(debt.getDebtorName());
-                row.createCell(1).setCellValue(debt.getCreditorName());
+                row.createCell(0).setCellValue(debt.getFromUser().getName());
+                row.createCell(1).setCellValue(debt.getToUser().getName());
                 row.createCell(2).setCellValue(debt.getAmount());
             }
 
@@ -213,11 +213,9 @@ public class DebtService {
 
         // Check if user exists in group
         boolean userFound = false;
-        String userName = null;
         for (Participant participant : group.getParticipants()) {
             if (participant.getUser().getId().equals(userId)) {
                 userFound = true;
-                userName = participant.getUser().getName();
                 break;
             }
         }
@@ -227,17 +225,15 @@ public class DebtService {
         }
 
         // Use optimized debt calculation
-        List<TransactionDTO> optimizedTransactions = optimizeGroupDebts(group);
-        // Recalculate debts for safety
-        calculateGroupDebts(group);
+        List<Debt> activeDebts = debtRepository.findByGroupAndIsActiveTrue(group);
 
         List<String> balanceSummary = new ArrayList<>();
 
-        for (TransactionDTO tx : optimizedTransactions) {
-            if (tx.getFrom().equals(userName)) {
-                balanceSummary.add("You owe ₹" + tx.getAmount() + " to " + tx.getTo());
-            } else if (tx.getTo().equals(userName)) {
-                balanceSummary.add(tx.getFrom() + " owes you ₹" + tx.getAmount());
+        for (Debt debt : activeDebts) {
+            if (debt.getFromUser().getId().equals(userId)) {
+                balanceSummary.add("You owe ₹" + debt.getAmount() + " to " + debt.getToUser().getName());
+            } else if (debt.getToUser().getId().equals(userId)) {
+                balanceSummary.add(debt.getFromUser().getName() + " owes you ₹" + debt.getAmount());
             }
         }
 
@@ -255,7 +251,8 @@ public class DebtService {
             Debt currDebt = debt.get();
             if(currDebt.getAmount()>=transactionDTO.getAmount()){
                 if(currDebt.getAmount().equals(transactionDTO.getAmount())) {
-                    debtRepository.deleteById(debtId);
+                    currDebt.setActive(false);  // Mark debt as settled
+                    debtRepository.save(currDebt);
                     return new ResponseEntity<>("Your Debt has been settled", HttpStatus.OK);
                 } else {
                     currDebt.setAmount(currDebt.getAmount() - transactionDTO.getAmount());
