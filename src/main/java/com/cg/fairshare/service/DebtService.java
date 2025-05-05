@@ -22,7 +22,6 @@ import java.io.ByteArrayOutputStream;
 import java.util.*;
 import java.util.stream.Collectors;
 
-
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -255,7 +254,13 @@ public class DebtService {
         if(debt.isPresent()){
             Debt currDebt = debt.get();
             if(currDebt.getAmount()>=transactionDTO.getAmount()){
-                currDebt.setAmount(currDebt.getAmount()-transactionDTO.getAmount());
+                if(currDebt.getAmount().equals(transactionDTO.getAmount())) {
+                    debtRepository.deleteById(debtId);
+                    return new ResponseEntity<>("Your Debt has been settled", HttpStatus.OK);
+                } else {
+                    currDebt.setAmount(currDebt.getAmount() - transactionDTO.getAmount());
+                    debtRepository.save(currDebt);
+                }
             }
             else{
                 User currDebtFrom = currDebt.getFromUser();

@@ -23,20 +23,7 @@ public class AuthServiceImpl implements IAuthService {
     private PasswordEncoder passwordEncoder;
 
     @Autowired
-    private PasswordResetService passwordResetService;  // new
-
-    @Override
-    public String login(LoginRequest loginRequest) {
-        String email = loginRequest.getEmail().trim().toLowerCase();
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Invalid email"));
-
-        if (passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
-            return jwtUtil.generateToken(email);
-        } else {
-            throw new RuntimeException("Invalid credentials");
-        }
-    }
+    private PasswordResetService passwordResetService;
 
     @Override
     public User register(RegisterRequest request) {
@@ -54,7 +41,18 @@ public class AuthServiceImpl implements IAuthService {
         return userRepository.save(user);
     }
 
-    // ---- New methods below ----
+    @Override
+    public String login(LoginRequest loginRequest) {
+        String email = loginRequest.getEmail().trim().toLowerCase();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Invalid email"));
+
+        if (passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
+            return jwtUtil.generateToken(email);
+        } else {
+            throw new RuntimeException("Invalid credentials");
+        }
+    }
 
     /**
      * Public API: generate an OTP, store it, and email it to the user.
