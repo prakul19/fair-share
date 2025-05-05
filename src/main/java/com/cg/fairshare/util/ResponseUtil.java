@@ -1,6 +1,7 @@
 package com.cg.fairshare.util;
 
 import com.cg.fairshare.response.ApiResponse;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 public class ResponseUtil {
@@ -24,6 +25,7 @@ public class ResponseUtil {
                 .body(new ApiResponse<>(false, msg, null));
     }
 
+    //Error response for Checking Validation
     public static <T> ResponseEntity<ApiResponse<T>> errorValid(int status, String msg,T data) {
         return ResponseEntity
                 .status(status)
