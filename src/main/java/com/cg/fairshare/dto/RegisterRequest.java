@@ -1,5 +1,6 @@
 package com.cg.fairshare.dto;
 
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -20,5 +21,8 @@ public class RegisterRequest {
     @NotNull(message = "Email cannot be null")
     @Pattern(regexp = "^[A-Za-z0-9+_.-]+@(.+)$",message = "Email must have only one @ and no spaces are allowed")
     private String email;
+
+    @NotBlank(message = "Password is required")
+    @Pattern(regexp = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!])(?=\\S+$).{8,20}$",message = "Password must have at least one lowercase, one uppercase, one digit and one special character. No whitespaces are allowed and should be 8-20 characters long")
     private String password;
 }

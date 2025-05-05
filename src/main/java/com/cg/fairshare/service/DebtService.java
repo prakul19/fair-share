@@ -248,4 +248,25 @@ public class DebtService {
 
         return balanceSummary;
     }
+
+
+    public ResponseEntity<?> settleDebtsService(Long debtId, TransactionDTO transactionDTO) {
+        Optional<Debt> debt = debtRepository.findById(debtId);
+        if(debt.isPresent()){
+            Debt currDebt = debt.get();
+            if(currDebt.getAmount()>=transactionDTO.getAmount()){
+                currDebt.setAmount(currDebt.getAmount()-transactionDTO.getAmount());
+            }
+            else{
+                User currDebtFrom = currDebt.getFromUser();
+                User currDebtTo = currDebt.getToUser();
+                currDebt.setFromUser(currDebtTo);
+                currDebt.setToUser(currDebtFrom);
+                currDebt.setAmount(transactionDTO.getAmount()-currDebt.getAmount());
+            }
+            debtRepository.save(currDebt);
+            return new ResponseEntity<>("Your Debt has been settled", HttpStatus.OK);
+        }
+        return new ResponseEntity<>("No such debt is present", HttpStatus.BAD_REQUEST);
+    }
 }
