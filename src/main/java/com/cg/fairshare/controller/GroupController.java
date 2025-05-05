@@ -129,6 +129,11 @@ public class GroupController {
         return ResponseUtil.ok(balance, "User balance fetched successfully");
     }
 
+    @PutMapping("/settleDebts/{debtId}")
+    public ResponseEntity<?> settleDebts(@PathVariable Long debtId, @RequestBody TransactionDTO transactionDTO){
+        return debtService.settleDebtsService(debtId, transactionDTO);
+    }
+
     // Helper to fetch participant emails
     private List<String> getParticipantsEmails(Long groupId) {
         Group group = groupRepository.findById(groupId)
